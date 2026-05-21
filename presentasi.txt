@@ -1,0 +1,65 @@
+=================================================
+MATERI PRESENTASI SISTEM INFORMASI SEWA LAPANGAN PADEL
+=================================================
+
+Slide 1: Judul Presentasi
+- Judul: Sistem Informasi Penyewaan Lapangan Padel (Padel Court Rental)
+- Oleh: [Nama Anda]
+- Penjelasan Singkat: Sebuah platform web berbasis Laravel (MVC) yang digunakan untuk memudahkan pelanggan menyewa lapangan padel, memfasilitasi kasir dalam mengelola pesanan, dan memberikan laporan langsung kepada pemilik (owner).
+
+-------------------------------------------------
+
+Slide 2: Arsitektur Sistem (MVC)
+Sistem ini dibangun menggunakan arsitektur Model-View-Controller (MVC) dengan framework Laravel:
+1. Model (Data): Menangani struktur database dan relasi. File berada di `app/Models/`.
+2. View (Tampilan): Menangani antarmuka pengguna (UI) menggunakan Blade Template. File berada di `resources/views/`.
+3. Controller (Logika): Penghubung antara View dan Model yang berisi logika bisnis. File berada di `app/Http/Controllers/`.
+4. Routes: Entry point yang memetakan URL yang diakses pengguna ke fungsi spesifik di dalam Controller (`routes/web.php`).
+
+-------------------------------------------------
+
+Slide 3: Struktur Database & Models
+Aplikasi ini memiliki 3 Entitas Utama (Models):
+1. User (Pengguna): Menyimpan data pelanggan, admin (kasir), dan owner. Memiliki atribut "role" untuk membedakan hak akses.
+2. Court (Lapangan): Menyimpan data lapangan padel yang tersedia.
+3. Booking (Pemesanan): Menyimpan riwayat penyewaan, waktu mulai, durasi, total harga, status (pending/confirmed/cancelled), dan bukti pembayaran. 
+   - Relasi: Satu Booking dimiliki oleh satu User dan terkait dengan satu Court.
+
+-------------------------------------------------
+
+Slide 4: Logika Bisnis & Hak Akses (Role)
+Sistem menggunakan Middleware untuk membatasi akses berdasarkan peran (Role-Based Access Control):
+
+1. Role: USER (Pelanggan)
+   - Fungsi Logic: Diarahkan ke Dashboard khusus pelanggan yang menampilkan kalender/jam (slots) yang tersedia.
+   - Flow: Sistem mengecek lapangan yang kosong (`buildBookingMap`). User memilih jam -> Membuat pesanan (Status: Pending) -> Upload bukti bayar -> Menunggu persetujuan kasir.
+
+2. Role: ADMIN KASIR
+   - Fungsi Logic: Memiliki Dashboard khusus untuk memantau semua pesanan masuk.
+   - Flow: Mengecek bukti bayar -> Melakukan aksi validasi dengan mengubah status pemesanan (Confirmed jika valid, Cancelled jika tidak valid). Dapat mencetak laporan PDF transaksi harian.
+
+3. Role: OWNER (Pemilik)
+   - Fungsi Logic: Memiliki tampilan Executive Dashboard.
+   - Flow: Melihat total pendapatan (Revenue), total pelanggan, dan memantau admin yang sedang online/aktif. Bisa mengunduh Laporan Pendapatan dan Pesanan secara penuh, serta mengelola (menghapus) user/admin.
+
+-------------------------------------------------
+
+Slide 5: Controller Penting (Logic Utama)
+- DashboardController: Logika "Otak" tampilan utama. Fungsi `index()` akan mendeteksi siapa yang login, lalu mengarahkannya ke dashboard yang sesuai. Jika user pelanggan, ia akan membangun matriks jadwal lapangan (jam 00:00 - 23:00) yang membedakan mana jam yang sudah di-booking dan mana yang kosong.
+- BookingController: Mengurus proses Create (menyimpan data pesanan baru), mengkalkulasi harga total berdasarkan durasi jam (Harga default Rp. 300.000/jam), mengurus upload file bukti pembayaran, dan update status.
+- ReportController: Logic untuk men-generate data dari database menjadi file PDF (menggunakan Blade views seperti `orders_pdf.blade.php`).
+- AuthController: Menangani logika Login dan Registrasi, serta logout dengan aman.
+
+-------------------------------------------------
+
+Slide 6: Kesimpulan & Flow Sistem secara Keseluruhan
+1. Pendaftaran & Autentikasi: Pengguna baru harus mendaftar dan login.
+2. Interaksi Jadwal: Sistem menampilkan jadwal secara real-time untuk mencegah "Double Booking" (pesanan ganda) pada jam dan lapangan yang sama.
+3. Proses Transaksi: User Pesan -> Sistem hitung Harga -> User Bayar -> Admin Verifikasi.
+4. Laporan Eksekutif: Data yang valid (Confirmed) diolah menjadi laporan keuangan PDF bagi Owner untuk evaluasi bisnis.
+
+=================================================
+TIPS UNTUK PRESENTASI:
+- Saat menjelaskan MVC, buka file `routes/web.php` sebagai contoh bagaimana URL diarahkan.
+- Saat menjelaskan pemesanan, tunjukkan `DashboardController.php` (bagian userDashboard) untuk memperlihatkan bagaimana sistem me-looping jam dari 00-24 dan mengecek status ketersediaan lapangan.
+- Tekankan bahwa sistem ini aman (mencegah akses tanpa login) dan terstruktur rapi berdasarkan 3 aktor utama (User, Admin, Owner).
