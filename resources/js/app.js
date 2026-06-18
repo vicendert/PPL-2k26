@@ -11,6 +11,6 @@ toggles.forEach((toggle) => {
 		const isPassword = input.getAttribute('type') === 'password';
 		input.setAttribute('type', isPassword ? 'text' : 'password');
 		toggle.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
-		toggle.textContent = isPassword ? '🙈' : '👁';
+		toggle.textContent = isPassword ? 'Sembunyikan' : 'Lihat';
 	});
 });

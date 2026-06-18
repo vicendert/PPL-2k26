@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? config('app.name', 'Padel Booking') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="db-body">
 
     {{-- Sidebar --}}
     <aside class="db-sidebar" id="db-sidebar">
         <div class="db-sidebar-brand">
-            <span class="db-sidebar-icon">🎾</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);"><circle cx="12" cy="12" r="10"/><path d="M6 12a6 6 0 0 1 12 0"/></svg>
             <span class="db-sidebar-name">PadelCourt</span>
         </div>
 

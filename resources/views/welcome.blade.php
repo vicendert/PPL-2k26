@@ -25,7 +25,7 @@
             {{-- Nav --}}
             <nav class="lp-nav">
                 <div class="lp-brand">
-                    <span class="lp-brand-icon">🎾</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);"><circle cx="12" cy="12" r="10"/><path d="M6 12a6 6 0 0 1 12 0"/></svg>
                     <span class="lp-brand-text">PadelCourt</span>
                 </div>
                 <div class="lp-nav-actions">
@@ -93,54 +93,6 @@
 
         </div>
 
-        {{-- RIGHT 40%: visual liquid glass panel --}}
-        <div class="landing-right" id="landing-right-panel">
-            <div class="lr-bg-image"></div>
-            <div class="lr-overlay"></div>
-
-            {{-- Floating glass cards --}}
-            <div class="lr-glass-card lr-card-top" id="glass-card-top">
-                <div class="lr-card-icon">⚡</div>
-                <div>
-                    <div class="lr-card-title">Konfirmasi Instan</div>
-                    <div class="lr-card-sub">Booking dikonfirmasi real-time</div>
-                </div>
-            </div>
-
-            <div class="lr-glass-card lr-card-mid" id="glass-card-mid">
-                <div class="lr-mini-schedule">
-                    <div class="lr-schedule-title">Jadwal Hari Ini</div>
-                    <div class="lr-schedule-row">
-                        <span class="lr-time">08:00</span>
-                        <span class="lr-slot lr-slot-taken">Terisi</span>
-                    </div>
-                    <div class="lr-schedule-row">
-                        <span class="lr-time">10:00</span>
-                        <span class="lr-slot lr-slot-free">Tersedia</span>
-                    </div>
-                    <div class="lr-schedule-row">
-                        <span class="lr-time">12:00</span>
-                        <span class="lr-slot lr-slot-free">Tersedia</span>
-                    </div>
-                    <div class="lr-schedule-row">
-                        <span class="lr-time">14:00</span>
-                        <span class="lr-slot lr-slot-taken">Terisi</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lr-glass-card lr-card-bottom" id="glass-card-bottom">
-                <div class="lr-card-icon">✅</div>
-                <div>
-                    <div class="lr-card-title">Booking Berhasil!</div>
-                    <div class="lr-card-sub">Lapangan A · Sabtu 10:00</div>
-                </div>
-            </div>
-
-            {{-- Decorative orbs --}}
-            <div class="lr-orb lr-orb-1" aria-hidden="true"></div>
-            <div class="lr-orb lr-orb-2" aria-hidden="true"></div>
-        </div>
 
     </div>{{-- /.landing-split --}}
 

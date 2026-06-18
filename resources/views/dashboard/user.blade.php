@@ -107,13 +107,9 @@
                 Pilih Tanggal
             </div>
         </div>
-        <form method="get" action="{{ route('dashboard') }}" class="db-date-form">
-            <input class="db-input" type="date" id="date" name="date" value="{{ $date }}">
-            <button class="db-btn db-btn-teal-outline" type="submit">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                Tampilkan
-            </button>
-        </form>
+        <div class="db-date-form">
+            <input class="db-input" type="date" id="main-date-picker" name="date" value="{{ $date }}">
+        </div>
         <p class="db-hint">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Slot berwarna hijau = tersedia. Merah/abu = terisi.
@@ -133,7 +129,7 @@
                     <span class="db-legend-dot db-legend-booked" style="margin-left:12px"></span> Terisi
                 </div>
             </div>
-            <div class="db-slot-grid">
+            <div class="db-slot-grid" data-court-slot-grid="{{ $court->id }}">
                 @foreach ($slots as $slot)
                     @php $status = $bookingMap[$court->id][$slot] ?? null; @endphp
                     <div class="db-slot {{ $status ? 'db-slot-booked' : 'db-slot-free' }}">
@@ -144,6 +140,7 @@
             </div>
         </div>
     @endforeach
+
 
     {{-- ════════ HARGA LAPANGAN ════════ --}}
     <div class="db-card">
@@ -156,7 +153,7 @@
         </div>
         <div class="db-price-grid">
             @for ($i = 1; $i <= 8; $i++)
-                <div class="db-price-item {{ $i === 1 ? 'db-price-item--highlight' : '' }}">
+                <div class="db-price-item {{ old('duration_hours', 1) == $i ? 'db-price-item--highlight' : '' }}" data-hours="{{ $i }}">
                     <div class="db-price-duration">{{ $i }} Jam</div>
                     <div class="db-price-amount">Rp {{ number_format($i * 300000, 0, ',', '.') }}</div>
                     @if($i === 1)
@@ -187,13 +184,17 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="db-form-group">
-                    <label class="db-label" for="booking_date">Tanggal</label>
-                    <input class="db-input" type="date" id="booking_date" name="date" value="{{ old('date', $date) }}" required>
-                </div>
+                {{-- Tanggal disinkronkan dari date picker atas (hidden) --}}
+                <input type="hidden" id="booking_date" name="date" value="{{ old('date', $date) }}">
                 <div class="db-form-group">
                     <label class="db-label" for="start_time">Jam Mulai</label>
-                    <input class="db-input" type="time" id="start_time" name="start_time" value="{{ old('start_time', '00:00') }}" min="00:00" max="23:00" required>
+                    <select class="db-input" id="start_time" name="start_time" required>
+                        @php $oldTime = old('start_time', '00:00'); @endphp
+                        @for ($h = 0; $h <= 23; $h++)
+                            @php $val = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00'; @endphp
+                            <option value="{{ $val }}" @selected($oldTime === $val)>{{ $val }}</option>
+                        @endfor
+                    </select>
                 </div>
                 <div class="db-form-group">
                     <label class="db-label" for="duration_hours">Durasi</label>
@@ -202,6 +203,14 @@
                             <option value="{{ $i }}" @selected(old('duration_hours', 1) == $i)>{{ $i }} jam — Rp {{ number_format($i * 300000, 0, ',', '.') }}</option>
                         @endfor
                     </select>
+                </div>
+                <div class="db-form-group">
+                    <label class="db-label" for="promo_code">Kode Promo (Opsional)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" class="db-input" id="promo_code" name="promo_code" placeholder="Masukkan kode promo" value="{{ old('promo_code') }}" style="flex: 1; text-transform: uppercase;">
+                        <button type="button" class="db-btn db-btn-teal" id="check-promo-btn" style="padding: 0 16px;">Gunakan</button>
+                    </div>
+                    <span id="promo-message" style="font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
             </div>
 
@@ -316,17 +325,26 @@
     (function () {
         const PRICE_PER_HOUR = 300000;
 
+        // ── All slots (00:00 – 23:00) ──
+        const ALL_SLOTS = Array.from({length: 24}, (_, i) => String(i).padStart(2,'0') + ':00');
+
         // ── Elements ──
-        const courtSel   = document.getElementById('court_id');
-        const dateSel    = document.getElementById('booking_date');
-        const timeSel    = document.getElementById('start_time');
-        const durSel     = document.getElementById('duration_hours');
-        const openQrBtn  = document.getElementById('open-qr-btn');
-        const backdrop   = document.getElementById('qr-modal-backdrop');
-        const closeBtn   = document.getElementById('qr-modal-close');
-        const cancelBtn  = document.getElementById('qr-cancel-btn');
-        const confirmBtn = document.getElementById('qr-confirm-btn');
-        const form       = document.getElementById('booking-form');
+        const courtSel      = document.getElementById('court_id');
+        const mainDatePicker= document.getElementById('main-date-picker');  // date picker atas
+        const bookingDate   = document.getElementById('booking_date');       // hidden input di form
+        const timeSel       = document.getElementById('start_time');
+        const durSel        = document.getElementById('duration_hours');
+        const promoInput    = document.getElementById('promo_code');
+        const checkPromoBtn = document.getElementById('check-promo-btn');
+        const promoMsg      = document.getElementById('promo-message');
+        const openQrBtn     = document.getElementById('open-qr-btn');
+        const backdrop      = document.getElementById('qr-modal-backdrop');
+        const closeBtn      = document.getElementById('qr-modal-close');
+        const cancelBtn     = document.getElementById('qr-cancel-btn');
+        const confirmBtn    = document.getElementById('qr-confirm-btn');
+        const form          = document.getElementById('booking-form');
+
+        let currentDiscountPercentage = 0;
 
         // ── Ringkasan harga real-time ──
         function formatRupiah(n) {
@@ -335,33 +353,220 @@
 
         function updateSummary() {
             const dur      = parseInt(durSel.value) || 1;
-            const total    = dur * PRICE_PER_HOUR;
+            let total      = dur * PRICE_PER_HOUR;
             const courtTxt = courtSel.options[courtSel.selectedIndex]?.text ?? '—';
-            const dateTxt  = dateSel.value || '—';
+            const dateTxt  = mainDatePicker?.value || '—';
             const timeTxt  = timeSel.value || '—';
+
+            let discount = 0;
+            if (currentDiscountPercentage > 0) {
+                discount = total * (currentDiscountPercentage / 100);
+                total = total - discount;
+            }
 
             document.getElementById('ps-court').textContent = courtSel.value ? courtTxt : '—';
             document.getElementById('ps-date').textContent  = dateTxt;
             document.getElementById('ps-time').textContent  = timeTxt + (timeSel.value ? ` (${dur} jam)` : '');
-            document.getElementById('ps-total').textContent = formatRupiah(total);
+            
+            const totalEl = document.getElementById('ps-total');
+            if (discount > 0) {
+                totalEl.innerHTML = `<del style="color: #94a3b8; font-size: 13px; margin-right: 8px;">${formatRupiah(dur * PRICE_PER_HOUR)}</del>${formatRupiah(total)}`;
+            } else {
+                totalEl.textContent = formatRupiah(total);
+            }
         }
 
-        [courtSel, dateSel, timeSel, durSel].forEach(el => el?.addEventListener('change', updateSummary));
+        [courtSel, timeSel, durSel].forEach(el => el?.addEventListener('change', updateSummary));
+        promoInput?.addEventListener('input', () => {
+            currentDiscountPercentage = 0;
+            promoMsg.textContent = '';
+            updateSummary();
+        });
+
+        checkPromoBtn?.addEventListener('click', async () => {
+            const code = promoInput.value.trim();
+            if (!code) return;
+
+            checkPromoBtn.disabled = true;
+            promoMsg.textContent = 'Mengecek...';
+            promoMsg.style.color = 'inherit';
+
+            try {
+                const res = await fetch(`/api/promos/check?code=${encodeURIComponent(code)}`);
+                const data = await res.json();
+
+                if (data.valid) {
+                    currentDiscountPercentage = data.discount_percentage;
+                    promoMsg.textContent = `Promo diterapkan! Diskon ${data.discount_percentage}%`;
+                    promoMsg.style.color = '#10b981';
+                } else {
+                    currentDiscountPercentage = 0;
+                    promoMsg.textContent = data.message || 'Promo tidak valid.';
+                    promoMsg.style.color = '#ef4444';
+                }
+            } catch (err) {
+                currentDiscountPercentage = 0;
+                promoMsg.textContent = 'Gagal mengecek promo.';
+                promoMsg.style.color = '#ef4444';
+            } finally {
+                checkPromoBtn.disabled = false;
+                updateSummary();
+            }
+        });
+
         updateSummary();
+
+        // ── Price Grid Selection Sync ──
+        const priceItems = document.querySelectorAll('.db-price-item');
+        priceItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const hours = item.getAttribute('data-hours');
+                if (durSel && hours) {
+                    durSel.value = hours;
+                    durSel.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        function updatePriceGridHighlight() {
+            const currentHours = durSel?.value;
+            priceItems.forEach(item => {
+                const hours = item.getAttribute('data-hours');
+                if (hours === currentHours) {
+                    item.classList.add('db-price-item--highlight');
+                } else {
+                    item.classList.remove('db-price-item--highlight');
+                }
+            });
+        }
+        durSel?.addEventListener('change', updatePriceGridHighlight);
+        updatePriceGridHighlight();
+
+        // ── Dynamic Slot Grid (AJAX) ──
+        // bookingMap dari server (initial load)
+        let currentBookingMap = @json($bookingMap);
+
+        function renderSlotGrids(bookingMap) {
+            // Setiap .db-slot-grid di-render ulang berdasarkan bookingMap baru
+            document.querySelectorAll('[data-court-slot-grid]').forEach(grid => {
+                const courtId = grid.getAttribute('data-court-slot-grid');
+                grid.innerHTML = ALL_SLOTS.map(slot => {
+                    const status = bookingMap[courtId]?.[slot] ?? null;
+                    const label  = status ? (status === 'confirmed' ? 'Dikonfirmasi' : 'Pending') : 'Tersedia';
+                    const cls    = status ? 'db-slot-booked' : 'db-slot-free';
+                    return `<div class="db-slot ${cls}">
+                        <div class="db-slot-time">${slot}</div>
+                        <div class="db-slot-label">${label}</div>
+                    </div>`;
+                }).join('');
+            });
+
+            // Update stat "Slot Tersedia"
+            updateSlotStats(bookingMap);
+        }
+
+        function updateSlotStats(bookingMap) {
+            const courtCount = document.querySelectorAll('[data-court-slot-grid]').length;
+            const totalSlots = ALL_SLOTS.length * courtCount;
+            let bookedCount  = 0;
+            Object.values(bookingMap).forEach(slots => { bookedCount += Object.keys(slots).length; });
+            const available  = Math.max(totalSlots - bookedCount, 0);
+
+            const valEl = document.querySelector('.db-stat-value:not(.db-stat-date)');
+            if (valEl) {
+                // Cari stat card "Slot Tersedia" secara spesifik
+                document.querySelectorAll('.db-stat-card').forEach(card => {
+                    if (card.querySelector('.db-stat-label')?.textContent.trim() === 'Slot Tersedia') {
+                        card.querySelector('.db-stat-value').textContent = available;
+                        card.querySelector('.db-stat-sub').textContent   = `Dari ${totalSlots} total slot`;
+                    }
+                });
+            }
+        }
+
+        function setSlotGridLoading(loading) {
+            document.querySelectorAll('[data-court-slot-grid]').forEach(grid => {
+                if (loading) {
+                    grid.style.opacity = '0.4';
+                    grid.style.pointerEvents = 'none';
+                } else {
+                    grid.style.opacity = '';
+                    grid.style.pointerEvents = '';
+                }
+            });
+        }
+
+        async function fetchSlotsForDate(date) {
+            if (!date) return;
+            setSlotGridLoading(true);
+
+            // Update tanggal yang tampil di stat card
+            const dateStatEl = document.querySelector('.db-stat-date');
+            if (dateStatEl && date) {
+                try {
+                    const d = new Date(date);
+                    dateStatEl.textContent = d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+                    const dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+                    const subEl = dateStatEl.closest('.db-stat-body')?.querySelector('.db-stat-sub');
+                    if (subEl) subEl.textContent = dayNames[d.getDay()];
+                } catch(e) {}
+            }
+
+            try {
+                const res = await fetch(`/api/slots?date=${encodeURIComponent(date)}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) throw new Error('Network error');
+                const bookingMap = await res.json();
+                currentBookingMap = bookingMap;
+                renderSlotGrids(bookingMap);
+            } catch (err) {
+                console.error('Gagal memuat slot:', err);
+            } finally {
+                setSlotGridLoading(false);
+            }
+        }
+
+        // Saat tanggal di date picker atas berubah:
+        // 1) Sync ke hidden input form booking
+        // 2) Fetch slot grid baru via AJAX
+        // 3) Update ringkasan harga
+        mainDatePicker?.addEventListener('change', function () {
+            const date = this.value;
+            if (bookingDate) bookingDate.value = date;
+            fetchSlotsForDate(date);
+            updateSummary();
+        });
 
         // ── QR Modal ──
         function openModal() {
-            if (!courtSel.value || !dateSel.value || !timeSel.value || !durSel.value) {
-                alert('Lengkapi form booking terlebih dahulu.');
+            if (!courtSel.value || !mainDatePicker.value || !timeSel.value || !durSel.value) {
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Lengkapi form booking terlebih dahulu.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
                 return;
             }
             const dur     = parseInt(durSel.value) || 1;
-            const total   = dur * PRICE_PER_HOUR;
+            let total     = dur * PRICE_PER_HOUR;
+            let discountHtml = '';
+
+            if (currentDiscountPercentage > 0) {
+                const discount = total * (currentDiscountPercentage / 100);
+                total = total - discount;
+                discountHtml = `<div class="qr-summary-row" style="color: #10b981;"><span>Diskon Promo (${currentDiscountPercentage}%)</span><strong>-${formatRupiah(discount)}</strong></div>`;
+            }
+
             const court   = courtSel.options[courtSel.selectedIndex]?.text ?? '-';
+            const dateVal = mainDatePicker?.value ?? '-';
             document.getElementById('qr-summary').innerHTML = `
                 <div class="qr-summary-row"><span>Lapangan</span><strong>${court}</strong></div>
-                <div class="qr-summary-row"><span>Tanggal</span><strong>${dateSel.value}</strong></div>
+                <div class="qr-summary-row"><span>Tanggal</span><strong>${dateVal}</strong></div>
                 <div class="qr-summary-row"><span>Jam</span><strong>${timeSel.value} (${dur} jam)</strong></div>
+                ${discountHtml}
                 <div class="qr-summary-row qr-summary-total"><span>Total Bayar</span><strong>${formatRupiah(total)}</strong></div>
             `;
             backdrop.classList.add('qr-modal-open');
@@ -398,3 +603,4 @@
     }
     </script>
 @endsection
+

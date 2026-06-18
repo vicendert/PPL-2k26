@@ -44,7 +44,7 @@
                 <div class="input-group">
                     <input class="form-control" type="password" id="password" name="password" required data-password>
                     <button class="toggle-password" type="button" data-toggle-password aria-label="Tampilkan password">
-                        👁
+                        Lihat
                     </button>
                 </div>
             </div>

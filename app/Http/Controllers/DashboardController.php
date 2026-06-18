@@ -88,23 +88,30 @@ class DashboardController extends Controller
             ->orderBy('last_active_at', 'desc')
             ->get();
 
+        $bookings = Booking::query()
+            ->with(['user', 'court'])
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'desc')
+            ->limit(50)
+            ->get();
+
+        $promos = \App\Models\Promo::orderBy('created_at', 'desc')->get();
+
         return view('dashboard.owner', [
             'users'        => $users,
             'revenue'      => $revenue,
             'activeAdmins' => $activeAdmins,
+            'bookings'     => $bookings,
+            'promos'       => $promos,
         ]);
     }
 
     private function buildSlots(): array
     {
         $slots = [];
-        $start = Carbon::createFromTime(0, 0);
-
         for ($i = 0; $i < 24; $i++) {
-            $slots[] = $start->format('H:i');
-            $start->addHour();
+            $slots[] = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00';
         }
-
         return $slots;
     }
 
@@ -113,12 +120,21 @@ class DashboardController extends Controller
         $map = [];
 
         foreach ($bookings as $booking) {
-            $cursor = Carbon::parse($booking->start_time);
-            $end    = Carbon::parse($booking->end_time);
+            // start_time & end_time dari DB bisa berformat "HH:MM:SS" atau "HH:MM"
+            // Ambil hanya jam:menit agar konsisten
+            $startStr = substr($booking->start_time, 0, 5); // "HH:MM"
+            $endStr   = substr($booking->end_time,   0, 5); // "HH:MM"
 
-            while ($cursor < $end) {
-                $map[$booking->court_id][$cursor->format('H:i')] = $booking->status;
-                $cursor->addHour();
+            $startH = (int) explode(':', $startStr)[0];
+            $endH   = (int) explode(':', $endStr)[0];
+            $endM   = (int) explode(':', $endStr)[1];
+
+            // Jika end_time punya menit > 0, bulatkan ke atas
+            if ($endM > 0) $endH++;
+
+            for ($h = $startH; $h < $endH; $h++) {
+                $slot = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+                $map[$booking->court_id][$slot] = $booking->status;
             }
         }
 

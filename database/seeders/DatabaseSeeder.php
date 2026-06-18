@@ -11,27 +11,35 @@ use Illuminate\Support\Facades\Hash;
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        Court::query()->create([
-            'name' => 'Lapangan A',
+        Court::query()->updateOrCreate(['name' => 'Lapangan A'], [
             'location' => 'Indoor',
-            'price_per_hour' => 150000,
+            'price_per_hour' => 300000,
         ]);
 
-        Court::query()->create([
-            'name' => 'Lapangan B',
+        Court::query()->updateOrCreate(['name' => 'Lapangan B'], [
             'location' => 'Outdoor',
-            'price_per_hour' => 120000,
+            'price_per_hour' => 300000,
         ]);
 
-        User::query()->create([
+        Court::query()->updateOrCreate(['name' => 'Lapangan C'], [
+            'location' => 'Indoor',
+            'price_per_hour' => 300000,
+        ]);
+
+        Court::query()->updateOrCreate(['name' => 'Lapangan D'], [
+            'location' => 'Outdoor',
+            'price_per_hour' => 300000,
+        ]);
+
+        Court::query()->updateOrCreate(['name' => 'Lapangan E'], [
+            'location' => 'Indoor',
+            'price_per_hour' => 300000,
+        ]);
+
+        User::query()->updateOrCreate(['username' => 'user01'], [
             'name' => 'User Demo',
-            'username' => 'user01',
             'phone' => '081234567890',
             'address' => 'Jl. Padel No. 1',
             'gender' => 'male',
@@ -40,9 +48,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
         ]);
 
-        User::query()->create([
+        User::query()->updateOrCreate(['username' => 'kasir01'], [
             'name' => 'Admin Kasir Demo',
-            'username' => 'kasir01',
             'phone' => '081298765432',
             'address' => 'Jl. Kasir No. 2',
             'gender' => 'female',
@@ -51,9 +58,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
         ]);
 
-        User::query()->create([
+        User::query()->updateOrCreate(['username' => 'owner01'], [
             'name' => 'Owner Demo',
-            'username' => 'owner01',
             'phone' => '081211112222',
             'address' => 'Jl. Owner No. 3',
             'gender' => 'male',

@@ -1,13 +1,27 @@
 @if (session('success'))
-    <div class="alert">{{ session('success') }}</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                title: 'Berhasil',
+                text: "{{ session('success') }}",
+                icon: 'success',
+                confirmButtonColor: '#2563eb',
+                animation: false
+            });
+        });
+    </script>
 @endif
 
 @if ($errors->any())
-    <div class="alert">
-        <ul>
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                title: 'Peringatan',
+                html: `{!! implode('<br>', array_map('addslashes', $errors->all())) !!}`,
+                icon: 'error',
+                confirmButtonColor: '#ef4444',
+                animation: false
+            });
+        });
+    </script>
 @endif
