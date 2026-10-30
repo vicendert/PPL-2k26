@@ -27,7 +27,14 @@ class DashboardController extends Controller
 
     private function userDashboard(Request $request)
     {
-        $date   = $request->input('date', now()->toDateString());
+        $today = now()->toDateString();
+        $date  = $request->input('date', $today);
+
+        // Pastikan tanggal tidak boleh tanggal yang sudah lewat
+        if ($date < $today) {
+            $date = $today;
+        }
+
         $courts = Court::query()->orderBy('name')->get();
         $slots  = $this->buildSlots();
 
@@ -68,9 +75,12 @@ class DashboardController extends Controller
             ->limit(50)
             ->get();
 
+        $courts = Court::query()->orderBy('name')->get();
+
         return view('dashboard.admin', [
             'users'    => $users,
             'bookings' => $bookings,
+            'courts'   => $courts,
         ]);
     }
 

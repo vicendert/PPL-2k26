@@ -34,9 +34,14 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:admin_kasir')->prefix('admin')->group(function () {
+        Route::get('/walk-in', [BookingController::class, 'walkIn'])->name('admin.walkin');
         Route::get('/reports/orders', [ReportController::class, 'exportOrders'])->name('admin.reports.orders');
         Route::post('/bookings/{booking}/status', [BookingController::class, 'updateStatus'])
             ->name('admin.bookings.status');
+        Route::post('/bookings', [BookingController::class, 'storeByKasir'])
+            ->name('admin.bookings.store');
+        Route::get('/api/slots', [BookingController::class, 'getSlots'])
+            ->name('admin.api.slots');
     });
 
     Route::middleware('role:owner')->prefix('owner')->group(function () {

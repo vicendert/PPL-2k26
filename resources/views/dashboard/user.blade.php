@@ -23,6 +23,15 @@
                 </button>
             </div>
             <div class="qr-modal-body">
+                {{-- Countdown Timer --}}
+                <div class="qr-timer-banner" id="qr-timer-banner">
+                    <div class="qr-timer-left">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Selesaikan Pembayaran Dalam:</span>
+                    </div>
+                    <div class="qr-timer-digits" id="qr-timer-countdown">02:00</div>
+                </div>
+
                 <div class="qr-summary" id="qr-summary">
                     {{-- Diisi oleh JS --}}
                 </div>
@@ -32,18 +41,53 @@
                 <div class="qr-info">
                     <div class="qr-info-row">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Scan QR lalu bayar sesuai nominal, kemudian upload bukti bayar di bawah.
+                        Scan QR lalu bayar sesuai nominal dalam batas waktu 2 menit.
                     </div>
                     <div class="qr-info-row">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                         a.n. <strong>EFRAIM DARRELL F.N</strong> &mdash; NMID: ID1026469021541
                     </div>
                 </div>
+
+                {{-- Upload Bukti Pembayaran (Wajib) --}}
+                <div class="qr-upload-section">
+                    <div class="qr-upload-header">
+                        <label class="qr-upload-title" for="modal_payment_proof">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Upload Bukti Pembayaran <span class="qr-upload-required">*</span>
+                        </label>
+                        <span class="qr-upload-hint">Wajib diunggah</span>
+                    </div>
+
+                    <div class="qr-dropzone" id="qr-dropzone">
+                        <input type="file" id="modal_payment_proof" accept="image/jpeg,image/png,image/webp,image/jpg" class="qr-dropzone-input" required>
+                        <div class="qr-dropzone-empty" id="qr-dropzone-empty">
+                            <div class="qr-dropzone-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            </div>
+                            <div class="qr-dropzone-text">
+                                <strong>Pilih foto bukti transfer</strong>
+                                <span>Klik atau seret file ke area ini (Maks. 5MB)</span>
+                            </div>
+                        </div>
+                        <div class="qr-dropzone-preview" id="qr-dropzone-preview" style="display: none;">
+                            <img id="qr-preview-img" src="" alt="Preview Bukti Transfer" class="qr-preview-image">
+                            <div class="qr-preview-info">
+                                <div class="qr-preview-name" id="qr-preview-name">—</div>
+                                <div class="qr-preview-size" id="qr-preview-size">—</div>
+                                <div class="qr-preview-badge">✓ Foto bukti siap diunggah</div>
+                            </div>
+                            <button type="button" class="qr-preview-remove" id="qr-preview-remove" title="Hapus foto">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="qr-modal-footer">
                 <button class="db-btn db-btn-primary qr-confirm-btn" id="qr-confirm-btn" type="button">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    Sudah Bayar — Booking Sekarang
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload Bukti Bayar
                 </button>
                 <button class="db-btn qr-cancel-btn" id="qr-cancel-btn" type="button">Batal</button>
             </div>
@@ -108,11 +152,11 @@
             </div>
         </div>
         <div class="db-date-form">
-            <input class="db-input" type="date" id="main-date-picker" name="date" value="{{ $date }}">
+            <input class="db-input" type="date" id="main-date-picker" name="date" value="{{ $date }}" min="{{ now()->toDateString() }}">
         </div>
         <p class="db-hint">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Slot berwarna hijau = tersedia. Merah/abu = terisi.
+            Slot berwarna hijau = tersedia. Merah/abu = terisi. Pemesanan hanya dapat dilakukan untuk hari ini dan tanggal mendatang.
         </p>
     </div>
 
@@ -172,8 +216,9 @@
                 Pesan Lapangan
             </div>
         </div>
-        <form method="post" action="{{ route('bookings.store') }}" class="db-booking-form" id="booking-form">
+        <form method="post" action="{{ route('bookings.store') }}" class="db-booking-form" id="booking-form" enctype="multipart/form-data">
             @csrf
+            <input type="file" id="hidden_payment_proof" name="payment_proof" style="display:none;" required>
             <div class="db-form-grid">
                 <div class="db-form-group">
                     <label class="db-label" for="court_id">Lapangan</label>
@@ -185,7 +230,7 @@
                     </select>
                 </div>
                 {{-- Tanggal disinkronkan dari date picker atas (hidden) --}}
-                <input type="hidden" id="booking_date" name="date" value="{{ old('date', $date) }}">
+                <input type="hidden" id="booking_date" name="date" value="{{ old('date') && old('date') >= now()->toDateString() ? old('date') : $date }}">
                 <div class="db-form-group">
                     <label class="db-label" for="start_time">Jam Mulai</label>
                     <select class="db-input" id="start_time" name="start_time" required>
@@ -291,25 +336,13 @@
                                 <td class="db-price-cell">Rp {{ number_format($booking->total_price, 0, ',', '.') }}</td>
                                 <td><span class="db-status-badge db-status-{{ $booking->status }}">{{ $statusLabel }}</span></td>
                                 <td>
-                                    @if ($booking->status === 'cancelled')
-                                        <span class="db-muted" style="font-size:12px">—</span>
-                                    @elseif ($booking->payment_proof)
+                                    @if ($booking->payment_proof)
                                         <div class="db-proof-uploaded">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                             <a href="{{ Storage::url($booking->payment_proof) }}" target="_blank" class="db-proof-link">Lihat Bukti</a>
                                         </div>
                                     @else
-                                        <form method="post" action="{{ route('bookings.payment', $booking) }}" enctype="multipart/form-data" class="db-upload-form">
-                                            @csrf
-                                            <label class="db-upload-label" for="proof_{{ $booking->id }}">
-                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                                <span class="db-upload-text" id="upload-text-{{ $booking->id }}">Upload Bukti</span>
-                                            </label>
-                                            <input type="file" id="proof_{{ $booking->id }}" name="payment_proof"
-                                                accept="image/*" class="db-upload-input"
-                                                onchange="updateFileName(this, 'upload-text-{{ $booking->id }}', 'upload-submit-{{ $booking->id }}')">
-                                            <button type="submit" class="db-btn-sm db-btn-teal db-upload-submit" id="upload-submit-{{ $booking->id }}" style="display:none;">Kirim</button>
-                                        </form>
+                                        <span class="db-muted" style="font-size:12px">—</span>
                                     @endif
                                 </td>
                             </tr>
@@ -324,6 +357,7 @@
     <script>
     (function () {
         const PRICE_PER_HOUR = 300000;
+        const TODAY = '{{ now()->toDateString() }}';
 
         // ── All slots (00:00 – 23:00) ──
         const ALL_SLOTS = Array.from({length: 24}, (_, i) => String(i).padStart(2,'0') + ':00');
@@ -498,13 +532,18 @@
 
         async function fetchSlotsForDate(date) {
             if (!date) return;
+            if (date < TODAY) {
+                date = TODAY;
+                if (mainDatePicker) mainDatePicker.value = TODAY;
+                if (bookingDate) bookingDate.value = TODAY;
+            }
             setSlotGridLoading(true);
 
             // Update tanggal yang tampil di stat card
             const dateStatEl = document.querySelector('.db-stat-date');
             if (dateStatEl && date) {
                 try {
-                    const d = new Date(date);
+                    const d = new Date(date + 'T00:00:00');
                     dateStatEl.textContent = d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
                     const dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
                     const subEl = dateStatEl.closest('.db-stat-body')?.querySelector('.db-stat-sub');
@@ -528,18 +567,210 @@
         }
 
         // Saat tanggal di date picker atas berubah:
-        // 1) Sync ke hidden input form booking
-        // 2) Fetch slot grid baru via AJAX
-        // 3) Update ringkasan harga
+        // 1) Cegah pemilihan tanggal yang sudah lewat
+        // 2) Sync ke hidden input form booking
+        // 3) Fetch slot grid baru via AJAX
+        // 4) Update ringkasan harga
         mainDatePicker?.addEventListener('change', function () {
-            const date = this.value;
+            if (this.value && this.value < TODAY) {
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Tidak dapat memilih tanggal yang sudah lewat.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                this.value = TODAY;
+            }
+            const date = this.value || TODAY;
             if (bookingDate) bookingDate.value = date;
             fetchSlotsForDate(date);
             updateSummary();
         });
 
-        // ── QR Modal ──
+        // ── QR Modal & Countdown Timer (2 Menit) ──
+        let countdownTimer = null;
+        let timeRemaining = 120; // 120 detik = 2 menit
+        const TOTAL_PAYMENT_TIME = 120;
+
+        const modalFileInput  = document.getElementById('modal_payment_proof');
+        const hiddenFileInput = document.getElementById('hidden_payment_proof');
+        const dropzone        = document.getElementById('qr-dropzone');
+        const dropzoneEmpty   = document.getElementById('qr-dropzone-empty');
+        const dropzonePrev    = document.getElementById('qr-dropzone-preview');
+        const previewImg      = document.getElementById('qr-preview-img');
+        const previewName     = document.getElementById('qr-preview-name');
+        const previewSize     = document.getElementById('qr-preview-size');
+        const removeFileBtn   = document.getElementById('qr-preview-remove');
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function updateTimerDisplay() {
+            const min = Math.floor(Math.max(0, timeRemaining) / 60);
+            const sec = Math.max(0, timeRemaining) % 60;
+            const formatted = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+            const clockEl = document.getElementById('qr-timer-countdown');
+            const bannerEl = document.getElementById('qr-timer-banner');
+
+            if (clockEl) clockEl.textContent = formatted;
+
+            if (bannerEl) {
+                if (timeRemaining <= 30) {
+                    bannerEl.classList.add('qr-timer-urgent');
+                } else {
+                    bannerEl.classList.remove('qr-timer-urgent');
+                }
+            }
+        }
+
+        function startCountdown() {
+            stopCountdown();
+            timeRemaining = TOTAL_PAYMENT_TIME;
+            updateTimerDisplay();
+
+            countdownTimer = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+
+                if (timeRemaining <= 0) {
+                    stopCountdown();
+                    closeModal();
+                    Swal.fire({
+                        title: 'Waktu Pembayaran Habis!',
+                        text: 'Batas waktu 2 menit untuk menyelesaikan pembayaran telah berakhir. Silakan pilih jadwal dan ulangi pemesanan.',
+                        icon: 'warning',
+                        confirmButtonColor: '#2563eb',
+                        animation: false
+                    });
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+        }
+
+        function handleFileSelection(file) {
+            if (!file) return;
+
+            // Validasi tipe file gambar
+            if (!file.type.match(/^image\/(jpeg|png|webp|jpg)$/i)) {
+                Swal.fire({
+                    title: 'Format Tidak Sesuai',
+                    text: 'Bukti pembayaran harus berupa gambar (JPG, PNG, atau WEBP).',
+                    icon: 'error',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                resetModalUpload();
+                return;
+            }
+
+            // Validasi ukuran maksimal 5MB
+            if (file.size > 5 * 1024 * 1024) {
+                Swal.fire({
+                    title: 'Ukuran Melebihi Batas',
+                    text: 'Ukuran foto bukti transfer maksimal 5MB.',
+                    icon: 'error',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                resetModalUpload();
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                if (previewImg) previewImg.src = e.target.result;
+                if (previewName) previewName.textContent = file.name;
+                if (previewSize) previewSize.textContent = formatFileSize(file.size);
+                if (dropzoneEmpty) dropzoneEmpty.style.display = 'none';
+                if (dropzonePrev) dropzonePrev.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+
+            // Sync ke hidden input form
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                if (hiddenFileInput) hiddenFileInput.files = dt.files;
+            } catch (err) {}
+        }
+
+        function resetModalUpload() {
+            if (modalFileInput) modalFileInput.value = '';
+            if (hiddenFileInput) hiddenFileInput.value = '';
+            if (previewImg) previewImg.src = '';
+            if (dropzoneEmpty) dropzoneEmpty.style.display = 'flex';
+            if (dropzonePrev) dropzonePrev.style.display = 'none';
+            if (dropzone) dropzone.classList.remove('qr-dropzone-error');
+        }
+
+        modalFileInput?.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                handleFileSelection(this.files[0]);
+            }
+        });
+
+        removeFileBtn?.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetModalUpload();
+        });
+
+        // Drag & Drop
+        if (dropzone) {
+            ['dragenter', 'dragover'].forEach(name => {
+                dropzone.addEventListener(name, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('qr-dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(name => {
+                dropzone.addEventListener(name, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('qr-dragover');
+                });
+            });
+            dropzone.addEventListener('drop', function (e) {
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    const file = e.dataTransfer.files[0];
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        if (modalFileInput) modalFileInput.files = dt.files;
+                    } catch (err) {}
+                    handleFileSelection(file);
+                }
+            });
+        }
+
         function openModal() {
+            if (mainDatePicker && mainDatePicker.value && mainDatePicker.value < TODAY) {
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Tidak dapat memesan untuk tanggal yang sudah lewat.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                mainDatePicker.value = TODAY;
+                if (bookingDate) bookingDate.value = TODAY;
+                updateSummary();
+                return;
+            }
+
             if (!courtSel.value || !mainDatePicker.value || !timeSel.value || !durSel.value) {
                 Swal.fire({
                     title: 'Peringatan',
@@ -569,11 +800,16 @@
                 ${discountHtml}
                 <div class="qr-summary-row qr-summary-total"><span>Total Bayar</span><strong>${formatRupiah(total)}</strong></div>
             `;
+
+            resetModalUpload();
+            startCountdown();
+
             backdrop.classList.add('qr-modal-open');
             document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
+            stopCountdown();
             backdrop.classList.remove('qr-modal-open');
             document.body.style.overflow = '';
         }
@@ -585,22 +821,103 @@
             if (e.target === backdrop) closeModal();
         });
 
-        // Confirm → submit form
+        // Tombol "Upload Bukti Bayar" di modal → validasi bukti & submit
         confirmBtn?.addEventListener('click', function () {
+            if (timeRemaining <= 0) {
+                Swal.fire({
+                    title: 'Waktu Pembayaran Habis',
+                    text: 'Batas waktu 2 menit telah habis. Silakan ulangi pemesanan Anda.',
+                    icon: 'error',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                closeModal();
+                return;
+            }
+
+            if (mainDatePicker && mainDatePicker.value && mainDatePicker.value < TODAY) {
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Tidak dapat memesan untuk tanggal yang sudah lewat.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                mainDatePicker.value = TODAY;
+                if (bookingDate) bookingDate.value = TODAY;
+                updateSummary();
+                closeModal();
+                return;
+            }
+
+            const hasFile = (modalFileInput && modalFileInput.files && modalFileInput.files.length > 0) ||
+                            (hiddenFileInput && hiddenFileInput.files && hiddenFileInput.files.length > 0);
+
+            if (!hasFile) {
+                Swal.fire({
+                    title: 'Bukti Pembayaran Wajib Diunggah',
+                    text: 'Silakan upload bukti transfer pembayaran Anda terlebih dahulu.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                if (dropzone) {
+                    dropzone.classList.add('qr-dropzone-error');
+                    setTimeout(() => dropzone.classList.remove('qr-dropzone-error'), 1000);
+                }
+                return;
+            }
+
+            // Pastikan file tersambung ke form
+            if (modalFileInput && modalFileInput.files && modalFileInput.files[0]) {
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(modalFileInput.files[0]);
+                    hiddenFileInput.files = dt.files;
+                } catch (e) {
+                    modalFileInput.name = 'payment_proof';
+                    form.appendChild(modalFileInput);
+                }
+            }
+
+            stopCountdown();
             closeModal();
             form.submit();
         });
-    })();
 
-    // ── Upload preview ──
-    function updateFileName(input, textId, btnId) {
-        const textEl = document.getElementById(textId);
-        const btnEl  = document.getElementById(btnId);
-        if (input.files && input.files[0]) {
-            textEl.textContent = input.files[0].name.substring(0, 18) + (input.files[0].name.length > 18 ? '…' : '');
-            if (btnEl) btnEl.style.display = 'inline-flex';
-        }
-    }
+        // Validasi submit form langsung
+        form?.addEventListener('submit', function (e) {
+            const selectedDate = bookingDate?.value || mainDatePicker?.value;
+            if (selectedDate && selectedDate < TODAY) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Tidak dapat memesan untuk tanggal yang sudah lewat.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                if (mainDatePicker) mainDatePicker.value = TODAY;
+                if (bookingDate) bookingDate.value = TODAY;
+                updateSummary();
+                return false;
+            }
+
+            const hasFile = (hiddenFileInput && hiddenFileInput.files && hiddenFileInput.files.length > 0) ||
+                            (modalFileInput && modalFileInput.files && modalFileInput.files.length > 0);
+            if (!hasFile) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Bukti Bayar Diperlukan',
+                    text: 'Silakan klik tombol "Lihat QR & Booking" dan upload bukti pembayaran.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563eb',
+                    animation: false
+                });
+                return false;
+            }
+        });
+    })();
     </script>
 @endsection
 

@@ -6,15 +6,23 @@
         <div>
             <div class="db-page-eyebrow">Admin Kasir</div>
             <h1 class="db-page-title">Dashboard</h1>
-            <p class="db-page-desc">Monitor user, jadwal booking, dan bukti pembayaran.</p>
+            <p class="db-page-desc">Monitor user, jadwal booking, dan verifikasi bukti pembayaran.</p>
         </div>
-        <div class="db-page-badge db-badge-admin">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Admin Kasir
+        <div style="display:flex; align-items:center; gap:10px;">
+            <a href="{{ route('admin.walkin') }}" class="db-btn db-btn-primary" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                Catat Pesanan Walk-in
+            </a>
+            <div class="db-page-badge db-badge-admin">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Admin Kasir
+            </div>
         </div>
     </div>
 
-    {{-- Stats --}}
+    @include('partials.flash')
+
+    {{-- ════════ STATS ════════ --}}
     <div class="db-stats-grid">
         <div class="db-stat-card">
             <div class="db-stat-icon db-icon-blue">
@@ -57,6 +65,8 @@
             </div>
         </div>
     </div>
+
+
 
     <div class="db-grid-30-70">
         {{-- User Table --}}
@@ -114,7 +124,7 @@
                             <th>Lapangan</th>
                             <th>Tanggal</th>
                             <th>Jam</th>
-                            <th>Customer</th>
+                            <th>Pelanggan</th>
                             <th>Total</th>
                             <th>Bukti Bayar</th>
                             <th>Status</th>
@@ -129,6 +139,9 @@
                                     'cancelled' => 'Canceled',
                                     default     => 'Pending',
                                 };
+                                // Walk-in: tampilkan customer_name; online: tampilkan user->name
+                                $displayName = $booking->customer_name ?? $booking->user?->name ?? '-';
+                                $isWalkin    = !empty($booking->customer_name);
                             @endphp
                             <tr>
                                 <td><span class="db-court-name">{{ $booking->court->name ?? '-' }}</span></td>
@@ -136,8 +149,15 @@
                                 <td class="db-muted db-nowrap">{{ \Carbon\Carbon::parse($booking->start_time)->format('H:i') }} – {{ \Carbon\Carbon::parse($booking->end_time)->format('H:i') }}</td>
                                 <td>
                                     <div class="db-table-user">
-                                        <div class="db-mini-avatar">{{ strtoupper(substr($booking->user->name ?? 'U', 0, 1)) }}</div>
-                                        {{ $booking->user->name ?? '-' }}
+                                        <div class="db-mini-avatar" style="{{ $isWalkin ? 'background:rgba(245,158,11,.2);color:#f59e0b;' : '' }}">
+                                            {{ strtoupper(substr($displayName, 0, 1)) }}
+                                        </div>
+                                        <div>
+                                            <div>{{ $displayName }}</div>
+                                            @if($isWalkin)
+                                                <div style="font-size:10px; color:#f59e0b; font-weight:600; letter-spacing:.4px;">WALK-IN</div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="db-price-cell db-nowrap">Rp {{ number_format($booking->total_price, 0, ',', '.') }}</td>
@@ -152,6 +172,11 @@
                                                 <span class="db-proof-link-text">Lihat</span>
                                             </a>
                                         </div>
+                                    @elseif($isWalkin)
+                                        <span class="db-no-proof" style="color:#10b981; font-size:12px;">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                            Bayar tunai
+                                        </span>
                                     @else
                                         <span class="db-no-proof">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -164,9 +189,9 @@
                                     <form method="post" action="{{ route('admin.bookings.status', $booking) }}" class="db-inline-form">
                                         @csrf
                                         <select class="db-select-sm" name="status">
-                                            <option value="pending"    @selected($booking->status === 'pending')>Pending</option>
-                                            <option value="confirmed"  @selected($booking->status === 'confirmed')>Approved</option>
-                                            <option value="cancelled"  @selected($booking->status === 'cancelled')>Canceled</option>
+                                            <option value="pending"   @selected($booking->status === 'pending')>Pending</option>
+                                            <option value="confirmed" @selected($booking->status === 'confirmed')>Approved</option>
+                                            <option value="cancelled" @selected($booking->status === 'cancelled')>Canceled</option>
                                         </select>
                                         <button class="db-btn-sm db-btn-teal" type="submit">Simpan</button>
                                     </form>
@@ -200,4 +225,6 @@
     </div>
 
     @include('partials.export_modal')
+
+
 @endsection

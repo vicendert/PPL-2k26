@@ -3,7 +3,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 title: 'Berhasil',
-                text: "{{ session('success') }}",
+                text: {!! json_encode(session('success')) !!},
                 icon: 'success',
                 confirmButtonColor: '#2563eb',
                 animation: false

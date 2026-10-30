@@ -16,6 +16,7 @@ class Booking extends Model
     protected $fillable = [
         'user_id',
         'court_id',
+        'customer_name',
         'date',
         'start_time',
         'end_time',
@@ -24,6 +25,7 @@ class Booking extends Model
         'price_per_hour',
         'total_price',
         'payment_proof',
+        'notes',
     ];
 
     protected $casts = [

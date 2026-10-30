@@ -16,10 +16,22 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'court_id'       => ['required', 'exists:courts,id'],
-            'date'           => ['required', 'date'],
+            'date'           => ['required', 'date', 'after_or_equal:today'],
             'start_time'     => ['required', 'regex:/^\d{2}:\d{2}$/'],
             'duration_hours' => ['required', 'integer', 'min:1', 'max:8'],
             'promo_code'     => ['nullable', 'string'],
+            'payment_proof'  => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ], [
+            'court_id.required'       => 'Lapangan wajib dipilih.',
+            'date.required'           => 'Tanggal booking wajib diisi.',
+            'date.after_or_equal'     => 'Tanggal booking tidak boleh tanggal yang sudah lewat.',
+            'start_time.required'     => 'Jam mulai wajib diisi.',
+            'duration_hours.required' => 'Durasi booking wajib diisi.',
+            'payment_proof.required'  => 'Bukti pembayaran wajib diunggah.',
+            'payment_proof.file'      => 'Bukti pembayaran harus berupa file yang valid.',
+            'payment_proof.image'     => 'Bukti pembayaran harus berupa gambar.',
+            'payment_proof.mimes'     => 'Format gambar bukti pembayaran harus JPG, JPEG, PNG, atau WEBP.',
+            'payment_proof.max'       => 'Ukuran file bukti pembayaran maksimal 5MB.',
         ]);
 
         $startH  = (int) explode(':', $validated['start_time'])[0];
@@ -72,6 +84,8 @@ class BookingController extends Controller
 
         $court = Court::query()->findOrFail($validated['court_id']);
 
+        $paymentProofPath = $request->file('payment_proof')->store('payments', 'public');
+
         Booking::query()->create([
             'user_id'        => $request->user()->id,
             'court_id'       => $court->id,
@@ -82,10 +96,116 @@ class BookingController extends Controller
             'status'         => Booking::STATUS_PENDING,
             'price_per_hour' => self::PRICE_PER_HOUR,
             'total_price'    => $total,
+            'payment_proof'  => $paymentProofPath,
         ]);
 
-        return back()->with('success', 'Booking berhasil dibuat! Silakan lakukan pembayaran dan upload bukti bayar.');
+        return back()->with('success', 'Booking berhasil dibuat dan bukti pembayaran telah diunggah! Menunggu konfirmasi admin.');
     }
+
+    /**
+     * Tampilkan halaman khusus pencatatan pesanan walk-in untuk kasir.
+     */
+    public function walkIn()
+    {
+        $courts = Court::query()->orderBy('name')->get();
+
+        $walkInBookings = Booking::query()
+            ->with(['court', 'user'])
+            ->where(function ($query) {
+                $query->whereNotNull('customer_name')
+                      ->orWhere('notes', 'like', '%Walk-in%');
+            })
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'desc')
+            ->get();
+
+        return view('dashboard.walkin', [
+            'courts'         => $courts,
+            'walkInBookings' => $walkInBookings,
+        ]);
+    }
+
+    /**
+     * Kasir membuat booking atas nama pelanggan langsung (walk-in order).
+     * Booking langsung berstatus confirmed karena kasir yang memverifikasi.
+     */
+    public function storeByKasir(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_name'  => ['required', 'string', 'max:255'],
+            'court_id'       => ['required', 'exists:courts,id'],
+            'date'           => ['required', 'date', 'after_or_equal:today'],
+            'start_time'     => ['required', 'regex:/^\d{2}:\d{2}$/'],
+            'duration_hours' => ['required', 'integer', 'min:1', 'max:8'],
+        ], [
+            'customer_name.required'  => 'Nama pelanggan wajib diisi.',
+            'court_id.required'       => 'Lapangan wajib dipilih.',
+            'date.required'           => 'Tanggal booking wajib diisi.',
+            'date.after_or_equal'     => 'Tanggal booking tidak boleh tanggal yang sudah lewat.',
+            'start_time.required'     => 'Jam mulai wajib diisi.',
+            'duration_hours.required' => 'Durasi wajib diisi.',
+        ]);
+
+        $startH = (int) explode(':', $validated['start_time'])[0];
+        $endH   = $startH + (int) $validated['duration_hours'];
+
+        if ($endH > 24) {
+            return back()->withErrors([
+                'start_time' => 'Durasi booking melebihi batas jam operasional (max 24:00).',
+            ])->withInput();
+        }
+
+        $startTime = str_pad($startH, 2, '0', STR_PAD_LEFT) . ':00';
+        $endTime   = str_pad($endH,   2, '0', STR_PAD_LEFT) . ':00';
+
+        // Cek konflik jadwal
+        $conflict = Booking::query()
+            ->where('court_id', $validated['court_id'])
+            ->whereDate('date', $validated['date'])
+            ->whereIn('status', [Booking::STATUS_PENDING, Booking::STATUS_CONFIRMED])
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query->where('start_time', '<', $endTime)
+                      ->where('end_time',   '>', $startTime);
+            })
+            ->exists();
+
+        if ($conflict) {
+            return back()->withErrors([
+                'start_time' => 'Jadwal sudah terisi, silakan pilih jam lain.',
+            ])->withInput();
+        }
+
+        $hours = (int) $validated['duration_hours'];
+        $total = $hours * self::PRICE_PER_HOUR;
+        $court = Court::query()->findOrFail($validated['court_id']);
+
+        // Cari user pelanggan berdasarkan nama (walk-in: gunakan akun kasir sendiri jika tidak ditemukan)
+        $customer = \App\Models\User::where('name', $validated['customer_name'])
+                        ->where('role', \App\Models\User::ROLE_USER)
+                        ->first();
+        $userId = $customer?->id ?? $request->user()->id;
+
+        Booking::query()->create([
+            'user_id'        => $userId,
+            'court_id'       => $court->id,
+            'customer_name'  => $validated['customer_name'],
+            'date'           => $validated['date'],
+            'start_time'     => $startTime,
+            'end_time'       => $endTime,
+            'duration_hours' => $hours,
+            // Kasir langsung confirmed karena bayar di tempat
+            'status'         => Booking::STATUS_CONFIRMED,
+            'price_per_hour' => self::PRICE_PER_HOUR,
+            'total_price'    => $total,
+            'notes'          => 'Walk-in — dicatat oleh kasir.'
+                                . ($customer ? '' : ' (tamu/non-member)'),
+        ]);
+
+        return back()->with('success',
+            'Booking atas nama "' . $validated['customer_name'] . '" berhasil dibuat dan langsung dikonfirmasi.'
+        );
+    }
+
 
     public function uploadPayment(Request $request, Booking $booking)
     {
@@ -126,7 +246,11 @@ class BookingController extends Controller
      */
     public function getSlots(Request $request)
     {
-        $date = $request->input('date', now()->toDateString());
+        $today = now()->toDateString();
+        $date  = $request->input('date', $today);
+        if ($date < $today) {
+            $date = $today;
+        }
 
         $bookings = Booking::query()
             ->whereDate('date', $date)
